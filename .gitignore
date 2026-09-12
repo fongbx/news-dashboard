@@ -3,3 +3,9 @@ node_modules/
 .env.local
 .env
 *.log
+next-env.d.ts
+*.tsbuildinfo
+
+# AI coding assistant files (internal reference, not needed to run/understand the project)
+AGENTS.md
+CLAUDE.md

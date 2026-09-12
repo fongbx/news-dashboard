@@ -1,14 +1,23 @@
 # News Dashboard
 
-A calm, curated daily digest of Singapore news, world news, AI news, and posts from [codecut.ai](https://codecut.ai) — built to reduce information overload rather than add to it.
+A calm, curated daily digest of Singapore news, world news, and AI news — built to reduce information overload rather than add to it.
 
 ## How it works
 
-- When you load the page, the frontend calls `/api/digest`, a server-side route that fetches Singapore/World/AI stories from [TheNewsAPI](https://www.thenewsapi.com/), scrapes recent posts from codecut.ai, deduplicates near-identical stories, and trims each lane to the top 8.
-- Your API key is only ever read inside that server-side route — it never reaches the browser.
-- Read/seen state is stored in your browser's `localStorage`. Once every story in a lane is read, that lane shows a "You're caught up" footer.
+Loading the page calls `/api/digest`, a single server-side route that assembles three lanes:
 
-This is the simple version: no database, no caching, no scheduled jobs. Each page load fetches fresh data directly, which is fine for a personal dashboard you open a handful of times a day. The tradeoff is a couple seconds of load time per visit, and using a bit more of your TheNewsAPI daily quota per refresh.
+- **Singapore** — [TheNewsAPI](https://www.thenewsapi.com/), filtered to Channel NewsAsia, The Straits Times, TODAY, and Mothership.
+- **World** — TheNewsAPI, filtered to AP and CNN (wire-service-style sources, to keep out regional/soft-news noise).
+- **AI** — scraped directly from four blogs/newsletters: [codecut.ai](https://codecut.ai), [therundown.ai/guides](https://www.therundown.ai/guides), [aiadopters.club](https://aiadopters.club), and [oneusefulthing.org](https://www.oneusefulthing.org) (the last two are Substack newsletters, read via Substack's public JSON API).
+
+Each lane's fetch fails independently — if TheNewsAPI is unavailable, the AI lane (which doesn't depend on it) still loads normally.
+
+Other notable behavior:
+
+- Your `THENEWSAPI_KEY` is only ever read inside `lib/newsApi.ts`, on the server — it never reaches the browser.
+- Requests are cached for 30 minutes using Next.js's built-in Data Cache (persists across requests on Vercel, no separate database needed). This keeps repeated page loads from burning through TheNewsAPI's usage quota.
+- Read/seen state is stored in your browser's `localStorage`. Once every story in a lane is read, that lane shows a "You're caught up" footer.
+- Cards are laid out as an image-forward tile grid (Flipboard-style), one section per lane.
 
 ## Setup
 
@@ -27,10 +36,10 @@ This is the simple version: no database, no caching, no scheduled jobs. Each pag
    npm run dev
    ```
 
-4. Deploy: push this repo to GitHub, then import it into [Vercel](https://vercel.com) ("Add New → Project"). In the Vercel project's **Settings → Environment Variables**, add `THENEWSAPI_KEY`. That's it — no other services to provision.
+4. Deploy: push to GitHub, then import the repo into [Vercel](https://vercel.com) ("Add New → Project"). In the Vercel project's **Settings → Environment Variables**, add `THENEWSAPI_KEY`. No other services need provisioning.
 
-## Known follow-ups
+## Known limitations
 
-- `lib/scrapeCodecut.ts` targets codecut.ai's current HTML structure (`<article>` elements with `h2/h3 > a` headlines). Verify the selectors still match if the blog's theme changes.
-- Two low-priority npm audit findings remain, both inside Next.js's own bundled dev-only PostCSS dependency (source-map path traversal, dev server only) — resolving them requires upgrading to Next.js 16, which is a breaking change left for a deliberate follow-up.
-- If TheNewsAPI's free-tier rate limit ever becomes a problem from frequent page reloads, revisit adding a cache (e.g. Upstash Redis + a cron refresh) — the code was structured so `lib/newsApi.ts`, `lib/scrapeCodecut.ts`, and `lib/dedupe.ts` can be reused as-is by a scheduled job later.
+- TheNewsAPI's free tier caps every query at 3 results and enforces an account-wide usage limit — if you see empty Singapore/World lanes, check your usage on TheNewsAPI's dashboard.
+- `lib/scrapeAiBlogs.ts` scrapes codecut.ai and therundown.ai by matching their current HTML structure. If either site's markup changes, that source may silently return nothing (each source fails independently, so it won't break the others).
+- codecut.ai and therundown.ai don't expose real per-post publish dates, so AI-lane posts are interleaved round-robin across all four sources rather than sorted by recency.
