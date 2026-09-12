@@ -24,7 +24,7 @@ function stripHtml(html: string): string {
 }
 
 async function scrapeCodecut(): Promise<Story[]> {
-  const res = await fetch(CODECUT_URL, { cache: "no-store" });
+  const res = await fetch(CODECUT_URL, { next: { revalidate: 1800 } });
   if (!res.ok) {
     throw new Error(`Failed to fetch codecut.ai: ${res.status}`);
   }
@@ -64,7 +64,7 @@ async function scrapeCodecut(): Promise<Story[]> {
 // child <h3> holds the title and whose child <img> holds the thumbnail.
 async function scrapeRundownGuides(): Promise<Story[]> {
   const res = await fetch(RUNDOWN_GUIDES_URL, {
-    cache: "no-store",
+    next: { revalidate: 1800 },
     headers: { "User-Agent": "Mozilla/5.0" },
   });
   if (!res.ok) {
@@ -116,7 +116,7 @@ interface SubstackPost {
 // HTML (which returns empty markup to a plain fetch).
 async function scrapeSubstack(baseUrl: string, sourceName: string): Promise<Story[]> {
   const res = await fetch(`${baseUrl}/api/v1/posts?limit=5`, {
-    cache: "no-store",
+    next: { revalidate: 1800 },
     headers: { "User-Agent": "Mozilla/5.0" },
   });
   if (!res.ok) {

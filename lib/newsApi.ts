@@ -53,9 +53,13 @@ async function fetchFromEndpoint(
     ...extraParams,
   });
 
+  // Cached for 30 minutes: TheNewsAPI's free plan has a strict usage cap,
+  // and fetching fresh on every single page load burns through it fast.
+  // This uses Next.js's Data Cache, which persists across requests on
+  // Vercel without needing a separate database.
   const res = await fetch(
     `https://api.thenewsapi.com/v1/news/${endpoint}?${params.toString()}`,
-    { cache: "no-store" }
+    { next: { revalidate: 1800 } }
   );
 
   if (!res.ok) {
