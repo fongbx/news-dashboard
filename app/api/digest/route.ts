@@ -7,6 +7,9 @@ import type { Digest } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 const STORIES_PER_LANE = 8;
+// Higher cap for AI: posts are interleaved across 4 blog sources, so this
+// needs to be a multiple of 4 to give each source equal representation.
+const AI_STORIES_PER_LANE = 12;
 
 export async function GET() {
   try {
@@ -19,7 +22,7 @@ export async function GET() {
     const digest: Digest = {
       sg: dedupeStories(sgStories).slice(0, STORIES_PER_LANE),
       world: dedupeStories(worldStories).slice(0, STORIES_PER_LANE),
-      ai: aiPosts.slice(0, STORIES_PER_LANE),
+      ai: aiPosts.slice(0, AI_STORIES_PER_LANE),
       generatedAt: new Date().toISOString(),
     };
 

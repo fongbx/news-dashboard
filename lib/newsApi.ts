@@ -24,10 +24,13 @@ export async function fetchSgStories(): Promise<Story[]> {
   return fetchFromEndpoint("all", { domains: SG_DOMAINS, language: "en" }, "sg");
 }
 
-// Wire services (Reuters, AP) only publish stories that clear a real
-// significance bar, which filters out the mix of local/soft-news items
-// that TheNewsAPI's generic "top"/"general" category otherwise includes.
-const WORLD_DOMAINS = "reuters.com,apnews.com";
+// AP only publishes stories that clear a real significance bar, which
+// filters out the mix of local/soft-news items that TheNewsAPI's generic
+// "top"/"general" category otherwise includes. Reuters is excluded because
+// it returns zero results on this plan's `top` endpoint (tested directly);
+// CNN is a backup source that only surfaces if AP is thin at request time,
+// since results are sorted by recency and AP fills the slots first.
+const WORLD_DOMAINS = "apnews.com,cnn.com";
 
 export async function fetchWorldStories(): Promise<Story[]> {
   return fetchFromEndpoint("top", { domains: WORLD_DOMAINS, language: "en" }, "world");
