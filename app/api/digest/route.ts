@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { fetchLaneStories } from "@/lib/newsApi";
-import { scrapeCodecutPosts } from "@/lib/scrapeCodecut";
+import { fetchSgStories, fetchWorldStories } from "@/lib/newsApi";
+import { scrapeAiBlogPosts } from "@/lib/scrapeAiBlogs";
 import { dedupeStories } from "@/lib/dedupe";
-import { LANES, type Digest } from "@/lib/types";
+import type { Digest } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -10,26 +10,18 @@ const STORIES_PER_LANE = 8;
 
 export async function GET() {
   try {
-    const laneResults = await Promise.all(
-      LANES.map(async (lane) => {
-        const stories = await fetchLaneStories(lane.id);
-        return [lane.id, dedupeStories(stories).slice(0, STORIES_PER_LANE)] as const;
-      })
-    );
-
-    const codecutPosts = await scrapeCodecutPosts();
+    const [sgStories, worldStories, aiPosts] = await Promise.all([
+      fetchSgStories(),
+      fetchWorldStories(),
+      scrapeAiBlogPosts(),
+    ]);
 
     const digest: Digest = {
-      sg: [],
-      world: [],
-      ai: [],
-      codecut: codecutPosts,
+      sg: dedupeStories(sgStories).slice(0, STORIES_PER_LANE),
+      world: dedupeStories(worldStories).slice(0, STORIES_PER_LANE),
+      ai: aiPosts.slice(0, STORIES_PER_LANE),
       generatedAt: new Date().toISOString(),
     };
-
-    for (const [laneId, stories] of laneResults) {
-      digest[laneId] = stories;
-    }
 
     return NextResponse.json(digest);
   } catch (error) {

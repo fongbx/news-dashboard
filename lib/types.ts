@@ -8,11 +8,11 @@ export interface Story {
   url: string;
   sources: string[];
   publishedAt: string;
+  imageUrl?: string;
   isBlogPost?: boolean;
 }
 
 export type Digest = Record<LaneId, Story[]> & {
-  codecut: Story[];
   generatedAt: string;
 };
 
